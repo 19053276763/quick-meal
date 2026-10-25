@@ -8,6 +8,9 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * 全局异常处理器，处理项目中抛出的业务异常
  */
@@ -31,15 +34,15 @@ public class GlobalExceptionHandler {
         String message=ex.getMessage();
         if(message.contains("Duplicate entry"))
         {
-            String[] split=message.split(" ");
-            String username=split[2].replace("'", "");
-            String msg=username+MessageConstant.ALREADY_EXISIT;
-            return Result.error(msg);
+            // 用正则精准提取 'xxx' 里的用户名，避免被 MyBatis 多行错误消息干扰
+            Matcher m = Pattern.compile("Duplicate entry '(.+?)' for key").matcher(message);
+            if(m.find()){
+                String username = m.group(1);
+                String msg = username + MessageConstant.ALREADY_EXISIT;
+                return Result.error(msg);
+            }
         }
-        else
-        {
-            return Result.error(MessageConstant.UNKNOWN_ERROR);
-        }
+        return Result.error(MessageConstant.UNKNOWN_ERROR);
     }
 
 
